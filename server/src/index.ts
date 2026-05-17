@@ -9,16 +9,20 @@ import { setupSockets } from './socket';
 
 dotenv.config();
 
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: clientUrl,
     methods: ['GET', 'POST'],
   },
 });
 
-app.use(cors());
+app.use(cors({
+  origin: clientUrl,
+}));
 app.use(express.json());
 
 // Routes
@@ -31,14 +35,19 @@ setupSockets(io);
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/watchtogether';
 
+console.log('--- Starting WatchTogether Server ---');
+console.log(`Configured PORT: ${PORT}`);
+console.log(`Configured CLIENT_URL: ${clientUrl}`);
+
 mongoose
   .connect(MONGO_URI)
   .then(() => {
-    console.log('Connected to MongoDB');
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    console.log('Successfully connected to MongoDB.');
+    server.listen(Number(PORT), '0.0.0.0', () => {
+      console.log(`Server is running and listening on 0.0.0.0:${PORT}`);
     });
   })
   .catch((err) => {
-    console.error('MongoDB connection error:', err);
+    console.error('CRITICAL: MongoDB connection error:', err);
+    process.exit(1); // Exit early if DB connection fails
   });
