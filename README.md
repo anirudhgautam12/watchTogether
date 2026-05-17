@@ -2,6 +2,10 @@
 
 A modern, cozy, full-stack "Watch Together" web application designed for personal use to watch movies in sync remotely.
 
+## Live Demo
+
+🌐 Frontend: https://watch-together-nu-kohl.vercel.app
+
 ## Features
 
 - **Perfect Sync**: Real-time synchronization of play, pause, and seek actions.
