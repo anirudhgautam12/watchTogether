@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuthStore } from '../store/useAuthStore';
-import { Users, Plus, LogIn, Film } from 'lucide-react';
+import { Plus, LogIn, Film } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
-  const { user } = useAuthStore();
   const navigate = useNavigate();
   const [joinRoomId, setJoinRoomId] = useState('');
 
