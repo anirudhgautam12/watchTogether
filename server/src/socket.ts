@@ -35,9 +35,30 @@ export const setupSockets = (io: Server) => {
       console.log(`${username} joined room ${roomId}`);
     });
 
-    socket.on('sync-video', (data: SyncVideoData) => {
-      // Broadcast to everyone in the room except the sender
-      socket.to(data.roomId).emit('sync-video', data);
+    socket.on('video-play', (data: SyncVideoData) => {
+      console.log(`[Socket] Play event received in room ${data.roomId} from ${data.senderId}`);
+      socket.to(data.roomId).emit('video-play', data);
+      console.log(`[Socket] Broadcasted play to room ${data.roomId}`);
+    });
+
+    socket.on('video-pause', (data: SyncVideoData) => {
+      console.log(`[Socket] Pause event received in room ${data.roomId} from ${data.senderId}`);
+      socket.to(data.roomId).emit('video-pause', data);
+      console.log(`[Socket] Broadcasted pause to room ${data.roomId}`);
+    });
+
+    socket.on('video-seek', (data: SyncVideoData) => {
+      console.log(`[Socket] Seek event received in room ${data.roomId} to time ${data.time}`);
+      socket.to(data.roomId).emit('video-seek', data);
+      console.log(`[Socket] Broadcasted seek to room ${data.roomId}`);
+    });
+
+    socket.on('video-buffering', (data: SyncVideoData) => {
+      socket.to(data.roomId).emit('video-buffering', data);
+    });
+
+    socket.on('video-playing', (data: SyncVideoData) => {
+      socket.to(data.roomId).emit('video-playing', data);
     });
 
     socket.on('chat-message', (data: ChatMessageData) => {

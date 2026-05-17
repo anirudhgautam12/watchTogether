@@ -12,7 +12,7 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
   
   const emitSeek = (time: number) => {
     if (!socket || !roomId) return;
-    socket.emit('sync-video', { roomId, type: 'seek', time });
+    socket.emit('video-seek', { roomId, type: 'seek', time });
     lastSyncTime.current = Date.now();
   };
 
@@ -21,9 +21,8 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
 
     const video = videoRef.current;
 
-    const handleSync = (data: any) => {
+    const handleRemoteEvent = (data: any) => {
       if (!video) return;
-
       if (isDraggingRef.current) return;
 
       if (Date.now() < ignoreRemoteEventsUntil.current) {
@@ -66,10 +65,18 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
       }, lockDuration);
     };
 
-    socket.on('sync-video', handleSync);
+    socket.on('video-play', handleRemoteEvent);
+    socket.on('video-pause', handleRemoteEvent);
+    socket.on('video-seek', handleRemoteEvent);
+    socket.on('video-buffering', handleRemoteEvent);
+    socket.on('video-playing', handleRemoteEvent);
 
     return () => {
-      socket.off('sync-video', handleSync);
+      socket.off('video-play', handleRemoteEvent);
+      socket.off('video-pause', handleRemoteEvent);
+      socket.off('video-seek', handleRemoteEvent);
+      socket.off('video-buffering', handleRemoteEvent);
+      socket.off('video-playing', handleRemoteEvent);
     };
   }, [socket, roomId, setPartnerBuffering]);
 
@@ -83,14 +90,14 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
       if (isUpdatingRef.current) return;
       console.log('[Local] LOCAL PLAY event fired. Current state paused:', video.paused);
       ignoreRemoteEventsUntil.current = Date.now() + 1000;
-      socket.emit('sync-video', { roomId, type: 'play', time: video.currentTime });
+      socket.emit('video-play', { roomId, type: 'play', time: video.currentTime });
     };
 
     const handlePause = () => {
       if (isUpdatingRef.current) return;
       console.log('[Local] LOCAL PAUSE event fired. Current state paused:', video.paused);
       ignoreRemoteEventsUntil.current = Date.now() + 1000;
-      socket.emit('sync-video', { roomId, type: 'pause', time: video.currentTime });
+      socket.emit('video-pause', { roomId, type: 'pause', time: video.currentTime });
     };
 
     const handleSeek = () => {
@@ -98,19 +105,19 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
       
       const now = Date.now();
       if (now - lastSyncTime.current > 500) {
-        socket.emit('sync-video', { roomId, type: 'seek', time: video.currentTime });
+        socket.emit('video-seek', { roomId, type: 'seek', time: video.currentTime });
         lastSyncTime.current = now;
       }
     };
 
     const handleWaiting = () => {
       if (isUpdatingRef.current || isDraggingRef.current) return;
-      socket.emit('sync-video', { roomId, type: 'buffering' });
+      socket.emit('video-buffering', { roomId, type: 'buffering' });
     };
 
     const handlePlaying = () => {
       if (isUpdatingRef.current) return;
-      socket.emit('sync-video', { roomId, type: 'playing' });
+      socket.emit('video-playing', { roomId, type: 'playing' });
     };
 
     video.addEventListener('play', handlePlay);

@@ -11,6 +11,20 @@ export const getSocket = (): Socket => {
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+    });
+
+    socket.on('connect', () => {
+      console.log(`[Socket] Connected successfully with ID: ${socket?.id}`);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.warn(`[Socket] Disconnected. Reason: ${reason}`);
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error(`[Socket] Connection error:`, err.message);
     });
   }
   return socket;
