@@ -30,6 +30,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { partnerBuffering, reactions, partnerJoined } = useRoomStore();
@@ -209,8 +210,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
       className="flex-1 flex flex-col relative bg-black group overflow-hidden"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      onClick={togglePlay}
+      onClick={hasInteracted ? togglePlay : undefined}
     >
+      {/* Interaction Overlay to allow Autoplay */}
+      <AnimatePresence>
+        {!hasInteracted && (
+          <motion.div 
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              setHasInteracted(true);
+              // Unlock the video element for programmatic play
+              if (videoRef.current) {
+                videoRef.current.play().then(() => videoRef.current?.pause()).catch(() => {});
+              }
+            }}
+          >
+            <div className="bg-primary/20 p-8 rounded-full animate-pulse mb-8 shadow-[0_0_50px_rgba(225,29,72,0.4)]">
+              <Play className="w-16 h-16 text-primary ml-2" fill="currentColor" />
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">Click to Join Watch Party</h2>
+            <p className="text-white/60 text-lg">Interaction is required to enable synchronized playback.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <video
         ref={videoRef}
         src={videoSrc}

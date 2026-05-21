@@ -4,16 +4,19 @@ import { useRoomStore } from '../store/useRoomStore';
 
 export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const isUpdatingRef = useRef(false);
+  
+  // Strict locking to prevent infinite feedback loops
+  const isRemoteActionRef = useRef(false);
   const isDraggingRef = useRef(false);
-  const ignoreRemoteEventsUntil = useRef(0);
-  const lastSyncTime = useRef(0);
+  
+  const lastEmitTimeRef = useRef(0);
   const setPartnerBuffering = useRoomStore((state) => state.setPartnerBuffering);
   
   const emitSeek = (time: number) => {
     if (!socket || !roomId) return;
-    socket.emit('video-seek', { roomId, type: 'seek', time });
-    lastSyncTime.current = Date.now();
+    console.log('[SYNC-DEBUG] EMIT SEEK', time);
+    socket.emit('video-seek', { roomId, type: 'seek', time, senderId: socket.id });
+    lastEmitTimeRef.current = Date.now();
   };
 
   useEffect(() => {
@@ -24,45 +27,71 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
     const handleRemoteEvent = (data: any) => {
       if (!video) return;
       if (isDraggingRef.current) return;
+      
+      // If we just emitted an action, ignore incoming ones for a tiny window to prevent echoes
+      if (Date.now() - lastEmitTimeRef.current < 300) return;
 
-      if (Date.now() < ignoreRemoteEventsUntil.current) {
-        console.log(`[Socket] Ignored ${data.type} due to local action lock`);
-        return;
+      isRemoteActionRef.current = true;
+
+      // Silently correct large time drifts (>1s) on ANY event if time is provided
+      if (data.time !== undefined && Math.abs(video.currentTime - data.time) > 1) {
+        console.log(`[SYNC-DEBUG] Desync > 1s detected. Correcting from ${video.currentTime} to ${data.time}`);
+        video.currentTime = data.time;
       }
-
-      isUpdatingRef.current = true;
 
       switch (data.type) {
         case 'play':
-          console.log('[Socket] REMOTE PLAY received. Current state paused:', video.paused);
+          console.log('[SYNC-DEBUG] RECEIVE PLAY');
           if (video.paused) {
-            video.play().catch(e => console.error('[Video] Play error:', e));
+            console.log('[SYNC-DEBUG] APPLY PLAY');
+            video.play().then(() => {
+              console.log('[SYNC-DEBUG] PLAY SUCCESS');
+              setTimeout(() => isRemoteActionRef.current = false, 100);
+            }).catch(e => {
+              console.error('[SYNC-DEBUG] PLAY FAILED (autoplay blocked)', e);
+              isRemoteActionRef.current = false;
+            });
+          } else {
+            isRemoteActionRef.current = false;
           }
           break;
+
         case 'pause':
-          console.log('[Socket] REMOTE PAUSE received. Current state paused:', video.paused);
+          console.log('[SYNC-DEBUG] RECEIVE PAUSE');
           if (!video.paused) {
+            console.log('[SYNC-DEBUG] APPLY PAUSE');
             video.pause();
+            console.log('[SYNC-DEBUG] PAUSE SUCCESS');
+            setTimeout(() => isRemoteActionRef.current = false, 100);
+          } else {
+            isRemoteActionRef.current = false;
           }
           break;
+
         case 'seek':
-          if (data.time !== undefined && Math.abs(video.currentTime - data.time) > 2) {
+          console.log('[SYNC-DEBUG] RECEIVE SEEK to', data.time);
+          if (data.time !== undefined) {
             video.currentTime = data.time;
           }
+          setTimeout(() => isRemoteActionRef.current = false, 100);
           break;
+
         case 'buffering':
           setPartnerBuffering(true);
-          if (!video.paused) video.pause();
+          if (!video.paused) {
+             video.pause();
+          }
+          setTimeout(() => isRemoteActionRef.current = false, 100);
           break;
+
         case 'playing':
           setPartnerBuffering(false);
+          isRemoteActionRef.current = false;
           break;
+          
+        default:
+          isRemoteActionRef.current = false;
       }
-
-      const lockDuration = data.type === 'seek' ? 500 : 200;
-      setTimeout(() => {
-        isUpdatingRef.current = false;
-      }, lockDuration);
     };
 
     socket.on('video-play', handleRemoteEvent);
@@ -87,37 +116,39 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
     const video = videoRef.current;
 
     const handlePlay = () => {
-      if (isUpdatingRef.current) return;
-      console.log('[Local] LOCAL PLAY event fired. Current state paused:', video.paused);
-      ignoreRemoteEventsUntil.current = Date.now() + 1000;
-      socket.emit('video-play', { roomId, type: 'play', time: video.currentTime });
+      if (isRemoteActionRef.current) return;
+      console.log('[SYNC-DEBUG] EMIT PLAY');
+      socket.emit('video-play', { roomId, type: 'play', time: video.currentTime, senderId: socket.id });
+      lastEmitTimeRef.current = Date.now();
     };
 
     const handlePause = () => {
-      if (isUpdatingRef.current) return;
-      console.log('[Local] LOCAL PAUSE event fired. Current state paused:', video.paused);
-      ignoreRemoteEventsUntil.current = Date.now() + 1000;
-      socket.emit('video-pause', { roomId, type: 'pause', time: video.currentTime });
+      if (isRemoteActionRef.current) return;
+      console.log('[SYNC-DEBUG] EMIT PAUSE');
+      socket.emit('video-pause', { roomId, type: 'pause', time: video.currentTime, senderId: socket.id });
+      lastEmitTimeRef.current = Date.now();
     };
 
     const handleSeek = () => {
-      if (isUpdatingRef.current || isDraggingRef.current) return;
+      if (isRemoteActionRef.current || isDraggingRef.current) return;
       
       const now = Date.now();
-      if (now - lastSyncTime.current > 500) {
-        socket.emit('video-seek', { roomId, type: 'seek', time: video.currentTime });
-        lastSyncTime.current = now;
+      // Throttle rapid seeks from scrubbing
+      if (now - lastEmitTimeRef.current > 500) {
+        console.log('[SYNC-DEBUG] EMIT SEEK', video.currentTime);
+        socket.emit('video-seek', { roomId, type: 'seek', time: video.currentTime, senderId: socket.id });
+        lastEmitTimeRef.current = now;
       }
     };
 
     const handleWaiting = () => {
-      if (isUpdatingRef.current || isDraggingRef.current) return;
-      socket.emit('video-buffering', { roomId, type: 'buffering' });
+      if (isRemoteActionRef.current || isDraggingRef.current) return;
+      socket.emit('video-buffering', { roomId, type: 'buffering', senderId: socket.id });
     };
 
     const handlePlaying = () => {
-      if (isUpdatingRef.current) return;
-      socket.emit('video-playing', { roomId, type: 'playing' });
+      if (isRemoteActionRef.current) return;
+      socket.emit('video-playing', { roomId, type: 'playing', senderId: socket.id });
     };
 
     video.addEventListener('play', handlePlay);
