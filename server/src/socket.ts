@@ -32,24 +32,28 @@ export const setupSockets = (io: Server) => {
     socket.on('join-room', async ({ roomId, username }: JoinRoomData) => {
       socket.join(roomId);
       socket.to(roomId).emit('user-joined', { username, id: socket.id });
-      console.log(`[SERVER] USER JOINED ROOM ${roomId} (socket: ${socket.id}, user: ${username})`);
+      console.log(`[SERVER] JOIN ROOM: socket ${socket.id} joined room ${roomId} (user: ${username})`);
+      console.log(`[SERVER] CLIENTS IN ROOM ${roomId}:`, io.sockets.adapter.rooms.get(roomId));
     });
 
     socket.on('video-play', (data: SyncVideoData) => {
-      console.log(`[SERVER] RECEIVED PLAY EVENT`, data);
-      console.log(`[SERVER] BROADCASTING PLAY to room ${data.roomId}`);
+      console.log(`[SERVER] RECEIVED PLAY from socket ${socket.id} in room ${data.roomId}`, data);
+      console.log(`[SERVER] BROADCAST TARGET ROOM: ${data.roomId}`);
+      console.log(`[SERVER] CLIENTS IN ROOM ${data.roomId}:`, io.sockets.adapter.rooms.get(data.roomId));
       socket.to(data.roomId).emit('video-play', data);
     });
 
     socket.on('video-pause', (data: SyncVideoData) => {
-      console.log(`[SERVER] RECEIVED PAUSE EVENT`, data);
-      console.log(`[SERVER] BROADCASTING PAUSE to room ${data.roomId}`);
+      console.log(`[SERVER] RECEIVED PAUSE from socket ${socket.id} in room ${data.roomId}`, data);
+      console.log(`[SERVER] BROADCAST TARGET ROOM: ${data.roomId}`);
+      console.log(`[SERVER] CLIENTS IN ROOM ${data.roomId}:`, io.sockets.adapter.rooms.get(data.roomId));
       socket.to(data.roomId).emit('video-pause', data);
     });
 
     socket.on('video-seek', (data: SyncVideoData) => {
-      console.log(`[SERVER] RECEIVED SEEK EVENT`, data);
-      console.log(`[SERVER] BROADCASTING SEEK to room ${data.roomId}`);
+      console.log(`[SERVER] RECEIVED SEEK from socket ${socket.id} in room ${data.roomId}`, data);
+      console.log(`[SERVER] BROADCAST TARGET ROOM: ${data.roomId}`);
+      console.log(`[SERVER] CLIENTS IN ROOM ${data.roomId}:`, io.sockets.adapter.rooms.get(data.roomId));
       socket.to(data.roomId).emit('video-seek', data);
     });
 
@@ -77,8 +81,7 @@ export const setupSockets = (io: Server) => {
     });
 
     socket.on('disconnect', () => {
-      console.log(`User disconnected: ${socket.id}`);
-      // In a more complex setup, we'd find which room they were in and notify others.
+      console.log(`[SERVER] USER DISCONNECTED: socket ${socket.id}`);
     });
   });
 };
