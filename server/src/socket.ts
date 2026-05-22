@@ -32,25 +32,25 @@ export const setupSockets = (io: Server) => {
     socket.on('join-room', async ({ roomId, username }: JoinRoomData) => {
       socket.join(roomId);
       socket.to(roomId).emit('user-joined', { username, id: socket.id });
-      console.log(`${username} joined room ${roomId}`);
+      console.log(`[SERVER] USER JOINED ROOM ${roomId} (socket: ${socket.id}, user: ${username})`);
     });
 
     socket.on('video-play', (data: SyncVideoData) => {
-      console.log(`[Socket] Play event received in room ${data.roomId} from ${data.senderId}`);
+      console.log(`[SERVER] RECEIVED PLAY EVENT`, data);
+      console.log(`[SERVER] BROADCASTING PLAY to room ${data.roomId}`);
       socket.to(data.roomId).emit('video-play', data);
-      console.log(`[Socket] Broadcasted play to room ${data.roomId}`);
     });
 
     socket.on('video-pause', (data: SyncVideoData) => {
-      console.log(`[Socket] Pause event received in room ${data.roomId} from ${data.senderId}`);
+      console.log(`[SERVER] RECEIVED PAUSE EVENT`, data);
+      console.log(`[SERVER] BROADCASTING PAUSE to room ${data.roomId}`);
       socket.to(data.roomId).emit('video-pause', data);
-      console.log(`[Socket] Broadcasted pause to room ${data.roomId}`);
     });
 
     socket.on('video-seek', (data: SyncVideoData) => {
-      console.log(`[Socket] Seek event received in room ${data.roomId} to time ${data.time}`);
+      console.log(`[SERVER] RECEIVED SEEK EVENT`, data);
+      console.log(`[SERVER] BROADCASTING SEEK to room ${data.roomId}`);
       socket.to(data.roomId).emit('video-seek', data);
-      console.log(`[Socket] Broadcasted seek to room ${data.roomId}`);
     });
 
     socket.on('video-buffering', (data: SyncVideoData) => {

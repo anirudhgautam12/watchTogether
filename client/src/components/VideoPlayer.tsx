@@ -99,11 +99,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
     e?.stopPropagation();
     
     if (videoRef.current) {
-      // SINGLE SOURCE OF TRUTH: The actual HTML5 video element state
       if (videoRef.current.paused) {
+        console.log("[SYNC-STEP-1] LOCAL PLAY CLICK");
         videoRef.current.play().catch(err => console.error('Play error:', err));
         emitPlay();
       } else {
+        console.log("[SYNC-STEP-1] LOCAL PAUSE CLICK");
         videoRef.current.pause();
         emitPause();
       }
