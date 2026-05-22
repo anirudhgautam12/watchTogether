@@ -230,12 +230,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
       onMouseLeave={handleMouseLeave}
       onClick={hasInteracted ? togglePlay : undefined}
     >
-      {/* Temporary Debug Overlay */}
-      <div className="absolute top-4 left-4 z-50 bg-black/80 text-green-400 font-mono text-xs p-3 rounded border border-green-500/30 pointer-events-none">
-        <div>Status: Socket Connected</div>
-        <div>Room: {roomId}</div>
-        <div>Sync: {hasInteracted ? 'Enabled' : 'Waiting for Interaction'}</div>
-        <div className="text-blue-400 mt-1">{debugLog}</div>
+      {/* Giant Visible Debug Overlay */}
+      <div className="absolute top-4 left-4 z-50 bg-black/95 text-green-400 font-mono text-sm p-4 rounded border-2 border-green-500/50 pointer-events-none shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+        <div className="text-white font-bold mb-2 border-b border-green-500/30 pb-1">SYNC DEBUG PANEL</div>
+        <div>Status: {socket ? 'Socket Connected' : 'Disconnected'}</div>
+        <div>Socket ID: {socket?.id || 'N/A'}</div>
+        <div>Room ID: {roomId}</div>
+        <div>Sync Hook: Mounted</div>
+        <div>Listeners: {socket ? 'Registered' : 'Waiting'}</div>
+        <div>Autoplay Unlocked: {hasInteracted ? 'Yes' : 'No'}</div>
+        <div className="text-blue-400 mt-2 font-bold bg-blue-500/10 p-1 rounded border border-blue-500/20">{debugLog}</div>
       </div>
       {/* Interaction Overlay to allow Autoplay */}
       <AnimatePresence>

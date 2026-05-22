@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 
+(window as any).testSync = true;
+console.log("SYNC FILE LOADED - BUILD: " + Date.now());
+
 export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
+  console.log("[SYNC-MOUNT] useVideoSync hook function is executing! socket:", socket?.id, "roomId:", roomId);
   const videoRef = useRef<HTMLVideoElement>(null);
   
   // Expose explicit emit functions
@@ -30,7 +34,10 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
   };
 
   useEffect(() => {
+    console.log("[SYNC-MOUNT] useEffect triggered. socket:", !!socket, "roomId:", !!roomId, "videoRef:", !!videoRef.current);
     if (!socket || !roomId || !videoRef.current) return;
+    
+    console.log("[SYNC-MOUNT] socket connected. ID:", socket.id);
     const video = videoRef.current;
 
     const handleRemotePlay = async (data: any) => {
@@ -74,6 +81,7 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
       }
     };
 
+    console.log("[SYNC-MOUNT] registering socket listeners for play, pause, seek");
     socket.on('video-play', handleRemotePlay);
     socket.on('video-pause', handleRemotePause);
     socket.on('video-seek', handleRemoteSeek);
