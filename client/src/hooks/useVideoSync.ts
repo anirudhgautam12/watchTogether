@@ -35,12 +35,13 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
 
   useEffect(() => {
     console.log("[SYNC-MOUNT] useEffect triggered. socket:", !!socket, "roomId:", !!roomId, "videoRef:", !!videoRef.current);
-    if (!socket || !roomId || !videoRef.current) return;
+    if (!socket || !roomId) return;
     
     console.log("[SYNC-MOUNT] socket connected. ID:", socket.id);
-    const video = videoRef.current;
 
     const handleRemotePlay = async (data: any) => {
+      const video = videoRef.current;
+      if (!video) return;
       console.log('[SYNC-STEP-5] RECEIVED REMOTE PLAY', data);
       console.log('Video paused state BEFORE play():', video.paused);
       
@@ -63,6 +64,8 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
     };
 
     const handleRemotePause = (data: any) => {
+      const video = videoRef.current;
+      if (!video) return;
       console.log('[SYNC-STEP-5] RECEIVED REMOTE PAUSE', data);
       console.log('Video paused state BEFORE pause():', video.paused);
 
@@ -75,6 +78,8 @@ export const useVideoSync = (socket: Socket | null, roomId: string | null) => {
     };
 
     const handleRemoteSeek = (data: any) => {
+      const video = videoRef.current;
+      if (!video) return;
       console.log('[SYNC-STEP-5] RECEIVED REMOTE SEEK', data);
       if (data.time !== undefined) {
         video.currentTime = data.time;
