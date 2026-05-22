@@ -309,18 +309,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
         )}
       </AnimatePresence>
 
-      {/* Center Paused Overlay */}
+      {/* Play/Pause Animation Overlay */}
       <AnimatePresence>
         {!isPlaying && showControls && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            exit={{ opacity: 0, scale: 1.2 }}
+            transition={{ duration: 0.3, type: "spring", bounce: 0.4 }}
             className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
           >
-            <div className="w-20 h-20 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 shadow-2xl">
-              <Play className="w-10 h-10 text-white ml-1.5" fill="white" />
+            <div className="w-24 h-24 bg-black/30 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+              <Play className="w-12 h-12 text-white ml-2 drop-shadow-lg" fill="white" />
             </div>
           </motion.div>
         )}
@@ -330,18 +330,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
       <AnimatePresence>
         {showControls && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="absolute bottom-0 left-0 right-0 pt-32 pb-6 px-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col gap-4 z-40"
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.4, type: "spring", bounce: 0.1 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[95%] max-w-5xl bg-black/60 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex flex-col gap-3 z-40 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Progress Slider */}
-            <div className="flex items-center gap-4 w-full group/slider h-6">
-              <span className="text-white/90 text-sm font-medium w-12 text-right font-mono tracking-wide">{formatTime(localProgress)}</span>
+            <div className="flex items-center gap-4 w-full group/slider h-6 px-2">
+              <span className="text-white/80 text-xs font-semibold w-12 text-right tabular-nums tracking-wider">{formatTime(localProgress)}</span>
               
-              <div className="relative flex-1 h-full flex items-center cursor-pointer">
+              <div className="relative flex-1 h-full flex items-center cursor-pointer group/progress">
                 <input
                   type="range"
                   min={0}
@@ -353,46 +353,47 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
                   onMouseUp={handleSeekEnd}
                   onTouchStart={handleSeekStart}
                   onTouchEnd={handleSeekEnd}
-                  className="w-full h-1.5 hover:h-2 bg-white/20 rounded-full appearance-none transition-all duration-200 accent-primary z-10
-                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:scale-125"
+                  className="w-full h-1 group-hover/progress:h-2 bg-white/20 rounded-full appearance-none transition-all duration-300 z-10
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-0 [&::-webkit-slider-thumb]:h-0 group-hover/progress:[&::-webkit-slider-thumb]:w-4 group-hover/progress:[&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(255,255,255,0.5)] [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 hover:[&::-webkit-slider-thumb]:scale-125 hover:[&::-webkit-slider-thumb]:bg-primary"
                   style={{
                     background: `linear-gradient(to right, hsl(var(--primary)) ${(localProgress / duration) * 100}%, transparent ${(localProgress / duration) * 100}%)`
                   }}
                 />
                 {/* Glow effect underneath */}
                 <div 
-                  className="absolute left-0 h-1.5 group-hover/slider:h-2 rounded-full pointer-events-none opacity-40 blur-[4px] bg-primary transition-all duration-200 top-1/2 -translate-y-1/2"
+                  className="absolute left-0 h-1 group-hover/progress:h-2 rounded-full pointer-events-none opacity-40 blur-[6px] bg-primary transition-all duration-300 top-1/2 -translate-y-1/2"
                   style={{ width: `${(localProgress / duration) * 100}%` }}
                 />
               </div>
 
-              <span className="text-white/50 text-sm font-medium w-12 font-mono tracking-wide">{formatTime(duration)}</span>
+              <span className="text-white/50 text-xs font-semibold w-12 tabular-nums tracking-wider">{formatTime(duration)}</span>
             </div>
 
             {/* Bottom Bar Controls */}
-            <div className="flex items-center justify-between w-full mt-1 px-1">
-              <div className="flex items-center gap-6">
+            <div className="flex items-center justify-between w-full px-4 py-1">
+              <div className="flex items-center gap-5">
                 <button 
                   onClick={togglePlay} 
-                  className="text-white hover:text-primary hover:scale-110 transition-all"
+                  className="text-white hover:text-primary hover:scale-110 active:scale-95 transition-all drop-shadow-md"
+                  title={isPlaying ? "Pause" : "Play"}
                 >
                   {isPlaying ? <Pause className="w-8 h-8" fill="currentColor" /> : <Play className="w-8 h-8" fill="currentColor" />}
                 </button>
                 
-                <div className="flex items-center gap-4">
-                  <button onClick={(e) => skip(-10, e)} className="text-white/70 hover:text-white hover:scale-110 transition-all">
-                    <SkipBack className="w-6 h-6" />
+                <div className="flex items-center gap-3">
+                  <button onClick={(e) => skip(-10, e)} className="text-white/60 hover:text-white hover:scale-110 active:scale-95 transition-all" title="Skip Backward 10s">
+                    <SkipBack className="w-5 h-5" />
                   </button>
-                  <button onClick={(e) => skip(10, e)} className="text-white/70 hover:text-white hover:scale-110 transition-all">
-                    <SkipForward className="w-6 h-6" />
+                  <button onClick={(e) => skip(10, e)} className="text-white/60 hover:text-white hover:scale-110 active:scale-95 transition-all" title="Skip Forward 10s">
+                    <SkipForward className="w-5 h-5" />
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-2 group/volume relative ml-2">
-                  <button onClick={toggleMute} className="text-white/70 hover:text-white transition-colors">
-                    {isMuted || volume === 0 ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                <div className="flex items-center gap-3 group/volume relative ml-4">
+                  <button onClick={toggleMute} className="text-white/70 hover:text-white hover:scale-110 transition-all" title="Volume">
+                    {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                   </button>
-                  <div className="w-0 overflow-hidden opacity-0 group-hover/volume:w-24 group-hover/volume:opacity-100 transition-all duration-300 flex items-center h-6">
+                  <div className="w-0 overflow-hidden opacity-0 group-hover/volume:w-24 group-hover/volume:opacity-100 transition-all duration-300 ease-out flex items-center h-6">
                     <input
                       type="range"
                       min={0}
@@ -400,7 +401,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
                       step={0.01}
                       value={isMuted ? 0 : volume}
                       onChange={handleVolumeChange}
-                      className="w-full h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
+                      className="w-full h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md hover:[&::-webkit-slider-thumb]:scale-125"
                       style={{
                         background: `linear-gradient(to right, white ${volume * 100}%, rgba(255,255,255,0.2) ${volume * 100}%)`
                       }}
@@ -410,8 +411,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
               </div>
 
               <div className="flex items-center">
-                <button onClick={toggleFullscreen} className="text-white/70 hover:text-white hover:scale-110 transition-all">
-                  <Maximize className="w-6 h-6" />
+                <button onClick={toggleFullscreen} className="text-white/70 hover:text-white hover:scale-110 active:scale-95 transition-all" title="Fullscreen">
+                  <Maximize className="w-5 h-5" />
                 </button>
               </div>
             </div>
