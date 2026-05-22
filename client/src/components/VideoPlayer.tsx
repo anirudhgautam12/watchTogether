@@ -32,21 +32,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
   const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [debugLog, setDebugLog] = useState("Connected");
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (!socket) return;
-    const logEvent = (name: string) => (data: any) => setDebugLog(`[SYNC] received ${name} (t: ${data.time?.toFixed(1)})`);
-    socket.on('video-play', logEvent('play'));
-    socket.on('video-pause', logEvent('pause'));
-    socket.on('video-seek', logEvent('seek'));
-    return () => {
-      socket.off('video-play');
-      socket.off('video-pause');
-      socket.off('video-seek');
-    };
-  }, [socket]);
+
 
   const { partnerBuffering, reactions, partnerJoined } = useRoomStore();
 
@@ -100,11 +88,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
     
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        console.log("[SYNC-STEP-1] LOCAL PLAY CLICK");
         videoRef.current.play().catch(err => console.error('Play error:', err));
         emitPlay();
       } else {
-        console.log("[SYNC-STEP-1] LOCAL PAUSE CLICK");
         videoRef.current.pause();
         emitPause();
       }
@@ -230,17 +216,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
       onMouseLeave={handleMouseLeave}
       onClick={hasInteracted ? togglePlay : undefined}
     >
-      {/* Giant Visible Debug Overlay */}
-      <div className="absolute top-4 left-4 z-50 bg-black/95 text-green-400 font-mono text-sm p-4 rounded border-2 border-green-500/50 pointer-events-none shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-        <div className="text-white font-bold mb-2 border-b border-green-500/30 pb-1">SYNC DEBUG PANEL</div>
-        <div>Status: {socket ? 'Socket Connected' : 'Disconnected'}</div>
-        <div>Socket ID: {socket?.id || 'N/A'}</div>
-        <div>Room ID: {roomId}</div>
-        <div>Sync Hook: Mounted</div>
-        <div>Listeners: {socket ? 'Registered' : 'Waiting'}</div>
-        <div>Autoplay Unlocked: {hasInteracted ? 'Yes' : 'No'}</div>
-        <div className="text-blue-400 mt-2 font-bold bg-blue-500/10 p-1 rounded border border-blue-500/20">{debugLog}</div>
-      </div>
+
       {/* Interaction Overlay to allow Autoplay */}
       <AnimatePresence>
         {!hasInteracted && (
