@@ -50,26 +50,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
     return () => cancelAnimationFrame(animationFrameId);
   }, [videoRef, isDraggingRef]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
 
-    const updateDuration = () => setDuration(video.duration);
-    
-    // Update React state strictly based on real HTML5 events
-    const updatePlayStatePlay = () => setIsPlaying(true);
-    const updatePlayStatePause = () => setIsPlaying(false);
-
-    video.addEventListener('loadedmetadata', updateDuration);
-    video.addEventListener('play', updatePlayStatePlay);
-    video.addEventListener('pause', updatePlayStatePause);
-
-    return () => {
-      video.removeEventListener('loadedmetadata', updateDuration);
-      video.removeEventListener('play', updatePlayStatePlay);
-      video.removeEventListener('pause', updatePlayStatePause);
-    };
-  }, [videoRef]);
 
   const handleMouseMove = () => {
     setShowControls(true);
@@ -248,6 +229,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
         controls={false}
         onClick={togglePlay}
         onDoubleClick={toggleFullscreen}
+        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
       />
 
       {/* Floating Reactions */}
@@ -356,13 +340,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ socket, roomId, videoSrc, set
                   className="w-full h-1 group-hover/progress:h-2 bg-white/20 rounded-full appearance-none transition-all duration-300 z-10
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-0 [&::-webkit-slider-thumb]:h-0 group-hover/progress:[&::-webkit-slider-thumb]:w-4 group-hover/progress:[&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(255,255,255,0.5)] [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 hover:[&::-webkit-slider-thumb]:scale-125 hover:[&::-webkit-slider-thumb]:bg-primary"
                   style={{
-                    background: `linear-gradient(to right, hsl(var(--primary)) ${(localProgress / duration) * 100}%, transparent ${(localProgress / duration) * 100}%)`
+                    background: duration > 0 ? `linear-gradient(to right, hsl(var(--primary)) ${(localProgress / duration) * 100}%, transparent ${(localProgress / duration) * 100}%)` : 'transparent'
                   }}
                 />
                 {/* Glow effect underneath */}
                 <div 
                   className="absolute left-0 h-1 group-hover/progress:h-2 rounded-full pointer-events-none opacity-40 blur-[6px] bg-primary transition-all duration-300 top-1/2 -translate-y-1/2"
-                  style={{ width: `${(localProgress / duration) * 100}%` }}
+                  style={{ width: duration > 0 ? `${(localProgress / duration) * 100}%` : '0%' }}
                 />
               </div>
 
